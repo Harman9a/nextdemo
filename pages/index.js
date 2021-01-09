@@ -1,65 +1,192 @@
-import Head from "next/head";
-import styles from "../styles/Home.module.css";
+import React, { useState, createElement, useEffect } from "react";
+import { useSelector } from "react-redux";
+import "antd/dist/antd.css";
+import {
+  Layout,
+  Menu,
+  Input,
+  Button,
+  Row,
+  Col,
+  Comment,
+  Tooltip,
+  Avatar,
+  Image,
+  Typography,
+} from "antd";
+import {
+  UserOutlined,
+  DislikeOutlined,
+  LikeOutlined,
+  DislikeFilled,
+  LikeFilled,
+} from "@ant-design/icons";
+import moment from "moment";
 
 export default function Home() {
+  const { Header, Sider, Content } = Layout;
+  const { Title } = Typography;
+  const [mess, setMess] = useState([]);
+  const [newMess, setNewMess] = useState("");
+  const [likes, setLikes] = useState(0);
+  const [dislikes, setDislikes] = useState(0);
+  const [action, setAction] = useState(null);
+  const [userSelected, setUserSelected] = useState({ id: null, name: "" });
+
+  const rState = useSelector((state) => state);
+
+  const sendMessage = () => {
+    let allMess = mess;
+    allMess.push({ id: 1, message: newMess });
+    setMess(allMess);
+    setNewMess("");
+  };
+
+  const ChatMessage = (props) => {
+    return (
+      <div>
+        <Comment
+          actions={actions}
+          author={<a>{props.senderName}</a>}
+          avatar={
+            <Avatar
+              src="https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
+              alt="Han Solo"
+            />
+          }
+          content={<p>{props.message}</p>}
+          datetime={
+            <Tooltip title={moment().format("YYYY-MM-DD HH:mm:ss")}>
+              <span>{moment().fromNow()}</span>
+            </Tooltip>
+          }
+        />
+      </div>
+    );
+  };
+
+  const like = () => {
+    setLikes(1);
+    setDislikes(0);
+    setAction("liked");
+  };
+
+  const dislike = () => {
+    setLikes(0);
+    setDislikes(1);
+    setAction("disliked");
+  };
+
+  const actions = [
+    <Tooltip key="comment-basic-like" title="Like">
+      <span onClick={like}>
+        {createElement(action === "liked" ? LikeFilled : LikeOutlined)}
+        <span className="comment-action">{likes}</span>
+      </span>
+    </Tooltip>,
+    <Tooltip key="comment-basic-dislike" title="Dislike">
+      <span onClick={dislike}>
+        {React.createElement(
+          action === "disliked" ? DislikeFilled : DislikeOutlined
+        )}
+        <span className="comment-action">{dislikes}</span>
+      </span>
+    </Tooltip>,
+    <span key="comment-basic-reply-to">Reply to</span>,
+  ];
+
   return (
-    <div className={styles.container}>
-      <Head>
-        <title>Create Next App</title>
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing{" "}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/import?filter=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
-      </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+    <Layout>
+      <Sider
+        style={{
+          overflow: "auto",
+          height: "100vh",
+          position: "fixed",
+          left: 0,
+        }}
+      >
+        <div className="logo" />
+        <Menu theme="dark" mode="inline" defaultSelectedKeys={["1"]}>
+          {rState.users.map((x) => {
+            if (x.id !== rState.logedInUser.id) {
+              return (
+                <Menu.Item
+                  key={x.id}
+                  icon={<UserOutlined />}
+                  onClick={() => setUserSelected({ id: x.id, name: x.name })}
+                >
+                  {x.name}
+                </Menu.Item>
+              );
+            }
+          })}
+        </Menu>
+      </Sider>
+      <Layout className="site-layout" style={{ marginLeft: 200 }}>
+        <Header
+          className="site-layout-background"
+          style={{ padding: 0, textAlign: "center" }}
         >
-          Powered by{" "}
-          <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
-        </a>
-      </footer>
-    </div>
+          <h1>{userSelected.name}</h1>
+        </Header>
+        <Content
+          style={{
+            margin: "24px 16px 0",
+            overflow: "initial",
+            height: "100vh",
+          }}
+        >
+          {userSelected.name !== "" ? (
+            <div className="site-layout-background">
+              {rState.allMessage.map((x) => {
+                if (x.id === userSelected.id) {
+                  let sendFromID = x.sendFrom;
+                  let sendFrom = rState.users.filter((x) =>
+                    sendFromID === x.id ? x.name : null
+                  );
+                  return (
+                    <ChatMessage
+                      key={x.id}
+                      senderName={sendFrom[0].name}
+                      message={x.message}
+                    />
+                  );
+                }
+                return null;
+              })}
+            </div>
+          ) : (
+            <div style={{ textAlign: "center" }}>
+              <Image
+                width={200}
+                src="https://gw.alipayobjects.com/zos/antfincdn/aPkFc8Sj7n/method-draw-image.svg"
+              />
+              <br />
+              <div style={{ marginTop: "10px" }}>
+                <Title level={3} type="success">
+                  {rState.logedInUser.name}
+                </Title>
+              </div>
+            </div>
+          )}
+        </Content>
+        {userSelected.name !== "" ? (
+          <Row style={{ position: "sticky", bottom: "0", margin: "10" }}>
+            <Col span={8} offset="7">
+              <Input
+                value={newMess}
+                onChange={(e) => setNewMess(e.target.value)}
+                placeholder="Enter Message here"
+              />
+            </Col>
+            <Col span={8}>
+              <Button onClick={sendMessage} type="primary">
+                Send
+              </Button>
+            </Col>
+          </Row>
+        ) : null}
+      </Layout>
+    </Layout>
   );
 }
